@@ -1,0 +1,19 @@
+{
+  "name": "Da Fei Fei AI Image Stamp Tool",
+  "short_name": "AI Stamp Tool",
+  "description": "Offline image stamp extraction and PDF export.",
+  "lang": "zh-CN",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#7c3aed",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

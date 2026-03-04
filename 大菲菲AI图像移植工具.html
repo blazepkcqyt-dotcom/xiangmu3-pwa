@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#7c3aed">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="AI移植工具">
+    <link rel="manifest" href="./manifest.webmanifest">
+    <link rel="icon" href="./icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="./icon.svg">
+    <title>大菲菲专属AI图像移植工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <style>
+        .checkerboard {
+            background-color: #fff;
+            background-image: linear-gradient(45deg, #f1f5f9 25%, transparent 25%),
+                linear-gradient(-45deg, #f1f5f9 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #f1f5f9 75%),
+                linear-gradient(-45deg, transparent 75%, #f1f5f9 75%);
+            background-size: 16px 16px;
+            background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+        }
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 999px;
+            background: currentColor;
+            border: 2px solid #fff;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-rose-50 via-white to-indigo-50 text-slate-800">
+    <main class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+        <header class="rounded-3xl bg-white/90 border border-white shadow-lg p-6">
+            <h1 class="text-2xl sm:text-3xl font-black bg-gradient-to-r from-rose-600 to-violet-600 bg-clip-text text-transparent">大菲菲专属AI图像移植工具</h1>
+            <p class="text-sm text-slate-500 mt-2">本地处理 | 阈值抠印章 | 拖拽合成 | 导出 PDF</p>
+        </header>
+
+        <section class="grid lg:grid-cols-2 gap-6">
+            <div class="rounded-3xl bg-white/90 border border-white shadow-lg p-5 space-y-4">
+                <h2 class="text-lg font-bold">步骤1：提取印章</h2>
+                <label id="upload-source-area" class="block border-2 border-dashed border-slate-300 rounded-2xl p-8 text-center cursor-pointer hover:border-rose-400 hover:bg-rose-50/40 transition">
+                    <p class="font-semibold">上传原始印章图片</p>
+                    <p class="text-xs text-slate-500 mt-1">支持 JPG / PNG</p>
+                    <input id="source-input" type="file" class="hidden" accept="image/*">
+                </label>
+
+                <div id="edit-source-area" class="hidden space-y-4">
+                    <div class="grid sm:grid-cols-2 gap-4">
+                        <div class="rounded-xl overflow-hidden border border-slate-200 bg-slate-100 flex items-center justify-center min-h-[180px]">
+                            <img id="source-preview-img" class="max-w-full max-h-[260px] object-contain p-2" alt="source">
+                        </div>
+                        <div class="rounded-xl overflow-hidden border border-slate-200 checkerboard flex items-center justify-center min-h-[180px]">
+                            <img id="processed-preview-img" class="max-w-full max-h-[260px] object-contain p-2" alt="processed">
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between text-sm mb-1">
+                            <span class="font-semibold">红色敏感度</span>
+                            <span id="threshold-value" class="text-violet-600 font-bold">40</span>
+                        </div>
+                        <input id="threshold-slider" type="range" min="1" max="100" value="40" class="slider w-full h-2 rounded-lg bg-slate-200 text-rose-500 appearance-none">
+                    </div>
+                    <div class="flex gap-3">
+                        <button onclick="resetSource()" class="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-sm font-semibold">重选印章</button>
+                        <div id="extract-success-bar" class="hidden px-3 py-2 text-sm rounded-lg bg-emerald-50 text-emerald-700 font-semibold">印章提取成功</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="rounded-3xl bg-white/90 border border-white shadow-lg p-5 space-y-4">
+                <h2 class="text-lg font-bold">步骤2：移植合成</h2>
+                <label id="upload-target-area" class="block border-2 border-dashed border-slate-300 rounded-2xl p-8 text-center cursor-pointer hover:border-violet-400 hover:bg-violet-50/40 transition">
+                    <p class="font-semibold">上传背景图片</p>
+                    <input id="target-input" type="file" class="hidden" accept="image/*">
+                </label>
+
+                <div id="edit-target-area" class="hidden space-y-4">
+                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-2 flex justify-center min-h-[260px]">
+                        <div id="canvas-container" class="relative inline-block max-w-full max-h-[420px] overflow-hidden">
+                            <img id="target-img-display" class="block max-w-full max-h-[420px] object-contain pointer-events-none" alt="target">
+                            <div id="seal-layer" class="absolute -translate-x-1/2 -translate-y-1/2 cursor-move hidden" style="left:50%;top:50%;touch-action:none;">
+                                <img id="seal-img-display" class="w-full h-auto pointer-events-none mix-blend-multiply drop-shadow" alt="seal">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid sm:grid-cols-2 gap-4">
+                        <div>
+                            <div class="flex items-center justify-between text-sm mb-1">
+                                <span class="font-semibold">印章大小</span>
+                                <span id="scale-val" class="text-violet-600 font-bold">20%</span>
+                            </div>
+                            <input id="scale-slider" type="range" min="1" max="120" value="20" class="slider w-full h-2 rounded-lg bg-slate-200 text-violet-500 appearance-none">
+                        </div>
+                        <div>
+                            <div class="flex items-center justify-between text-sm mb-1">
+                                <span class="font-semibold">透明度</span>
+                                <span id="opacity-val" class="text-violet-600 font-bold">90%</span>
+                            </div>
+                            <input id="opacity-slider" type="range" min="30" max="100" value="90" class="slider w-full h-2 rounded-lg bg-slate-200 text-violet-500 appearance-none">
+                        </div>
+                    </div>
+
+                    <div class="rounded-xl border border-violet-100 bg-violet-50/60 p-4 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="font-semibold text-sm">余额</span>
+                            <span id="balance-count" class="font-black text-violet-700">0 点</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <input id="redeem-key-input" type="text" placeholder="输入密钥（例如 DF-XXXX-XXXX-XXXX）" class="flex-1 px-3 py-2 rounded-lg border border-slate-300 text-sm outline-none focus:ring-2 focus:ring-violet-200">
+                            <button id="redeem-key-btn" type="button" class="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm font-bold hover:bg-violet-500">兑换</button>
+                        </div>
+                        <p id="redeem-key-msg" class="text-xs min-h-[18px] text-slate-500"></p>
+                    </div>
+
+                    <div class="flex gap-2">
+                        <button onclick="resetTarget()" class="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-sm font-semibold">重选背景</button>
+                        <button id="download-btn" class="flex-1 px-4 py-2 rounded-lg bg-slate-200 text-slate-500 text-sm font-bold cursor-not-allowed" disabled>等待素材就绪...</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="preview-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm p-4">
+        <div class="max-w-4xl h-full mx-auto flex items-center justify-center">
+            <div class="w-full max-h-full rounded-3xl bg-white shadow-2xl p-5 space-y-4 overflow-auto">
+                <h3 class="text-xl font-black">合成成功</h3>
+                <div class="rounded-xl border border-slate-200 checkerboard min-h-[220px] flex items-center justify-center">
+                    <img id="final-result-img" class="max-w-full max-h-[68vh] object-contain" alt="final">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="closeModal()" class="py-3 rounded-xl bg-slate-100 hover:bg-slate-200 font-semibold">关闭</button>
+                    <a id="real-download-link" href="#" download="seal-result.pdf" class="py-3 rounded-xl bg-gradient-to-r from-rose-500 to-fuchsia-500 text-white font-bold text-center">下载 PDF</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="processing-canvas" class="hidden"></canvas>
+
+    <script>
+        const STORAGE_KEYS = {
+            balance: "seal_tool_balance",
+            used: "seal_tool_used_keys"
+        };
+
+        const PRESET_KEYS = [
+            "DF-AV6U-B8YD-3Z25","DF-P448-LFYW-LLJ8","DF-87LG-CJLK-WWDY","DF-ML76-R28V-6QSC","DF-RUP8-VEZP-BW5N",
+            "DF-HDJQ-4K68-4YV4","DF-ZDJW-YLGY-KGFH","DF-QGZQ-22J9-9778","DF-7VRM-QKJQ-M4HH","DF-C38F-KNBP-VBAC",
+            "DF-6ZTH-EHC4-NYGD","DF-KT5M-RQCV-NBT7","DF-SVGP-9J79-XR8E","DF-EKNZ-KC88-67F2","DF-S3ZD-6KD4-JXD3",
+            "DF-NH8F-3CJQ-V548","DF-UJMX-7MQS-JJY2","DF-8HUY-L5XE-WDNV","DF-4CPU-Z6FU-RAEY","DF-GMV7-EV66-HYBR",
+            "DF-W2NG-K6TP-YXFE","DF-5S8R-KUB8-SGH3","DF-E4R9-XY5R-QVTR","DF-GPL6-2HMC-9NJG","DF-YF26-5AFK-QJEY",
+            "DF-33NA-K2PH-ZEME","DF-CMGK-Q4QF-4A2N","DF-JN47-FEPK-6RW9","DF-QM32-2STU-A8XE","DF-EFUT-3CCS-DWEM",
+            "DF-EW4M-QNW2-357D","DF-79E7-6KAV-XETY","DF-QDRB-FDVT-DXLD","DF-EC92-9KNR-DGP3","DF-LTJT-8GN2-CSDL",
+            "DF-7PDK-3Q7Y-PNGN","DF-Z7QE-YN54-RUUV","DF-67KV-5YK7-REC7","DF-2DR9-NSJE-VKJW","DF-TQTE-P563-9GWW",
+            "DF-SWMB-ZY49-JCJV","DF-VR42-VC2R-WWBN","DF-VDEU-68CP-3WP3","DF-K8C4-MDZY-GKTY","DF-265Q-8ACY-KED4",
+            "DF-Z46T-RX2Z-ARFQ","DF-TTTP-P3QF-BQ2K","DF-LDJ6-RQYB-MQUU","DF-UX28-8S4P-NXD4","DF-HTW7-JGGX-SL9Y",
+            "DF-GE8Q-6VAN-CES4","DF-C9JZ-WEJS-LVCX","DF-BSQZ-VN3S-2XHC","DF-9QNN-UVTN-MXEX","DF-ZEHT-EFF5-LXFA",
+            "DF-ZCFK-GBAR-XH9M","DF-JK3S-JJMW-HWWN","DF-22HM-DV5Q-3EYH","DF-CQ85-4CXT-CULG","DF-WRMT-5VR9-UGPT",
+            "DF-AFYJ-L85S-4N2G","DF-BEWQ-TZUX-4YFR","DF-XGNG-3WL8-YD9N","DF-6T3A-CB2A-KZBC","DF-HGYB-234U-78AG",
+            "DF-HSH5-SL7A-DMSR","DF-FYB7-RWBB-BCHE","DF-KKRW-QNJJ-KGNK","DF-MYZL-X68H-MERU","DF-9Z46-6GX5-WPGU",
+            "DF-WVRN-BULK-MEF9","DF-SQX8-Z3F5-NMNL","DF-MCRR-WX86-SVB4","DF-HPQ2-NBLS-XLJT","DF-6SBE-EWWG-K36N",
+            "DF-HQKA-76TG-WZGG","DF-6Q3G-R3TV-YCAG","DF-JQ9X-5H5U-ZASD","DF-PSW9-AWMK-HYN3","DF-E3PL-Q4NA-3GQJ",
+            "DF-CHJE-CT44-U587","DF-X3LW-QE3T-FKZV","DF-AFWH-38JF-X3AF","DF-CNEN-LTN2-G9LL","DF-5A7G-3DNN-TV5E",
+            "DF-VEBJ-KRPV-KT3X","DF-Z8QR-5RLM-GAN5","DF-JXPX-6CNL-DQDZ","DF-HW8V-2UUD-3UGY","DF-39AS-SUAR-Y4AW",
+            "DF-TWJG-TM45-SGWH","DF-RUJW-TRPS-B5C4","DF-K8XV-LRFR-VN9F","DF-EH3B-9T6Q-99UL","DF-7DJ6-PBJL-GF5R",
+            "DF-K3F9-T3RE-P9QQ","DF-DFM5-BHGP-G7JL","DF-KM3P-DM6A-VNG6","DF-MEGE-3FUK-PUY9","DF-NMWJ-FMV6-9L5A"
+        ];
+
+        const state = {
+            sourceImgData: null,
+            processedSealData: null,
+            targetImgData: null,
+            threshold: 40,
+            sealPos: { x: 50, y: 50 },
+            scale: 20,
+            opacity: 0.9,
+            balance: 0,
+            usedKeys: {},
+            lastPdfUrl: null
+        };
+
+        const els = {
+            uploadSource: document.getElementById("upload-source-area"),
+            editSource: document.getElementById("edit-source-area"),
+            sourceInput: document.getElementById("source-input"),
+            sourcePreview: document.getElementById("source-preview-img"),
+            processedPreview: document.getElementById("processed-preview-img"),
+            thresholdSlider: document.getElementById("threshold-slider"),
+            thresholdValue: document.getElementById("threshold-value"),
+            successBar: document.getElementById("extract-success-bar"),
+
+            uploadTarget: document.getElementById("upload-target-area"),
+            editTarget: document.getElementById("edit-target-area"),
+            targetInput: document.getElementById("target-input"),
+            targetDisplay: document.getElementById("target-img-display"),
+            sealDisplay: document.getElementById("seal-img-display"),
+            sealLayer: document.getElementById("seal-layer"),
+            canvasContainer: document.getElementById("canvas-container"),
+
+            scaleSlider: document.getElementById("scale-slider"),
+            scaleValue: document.getElementById("scale-val"),
+            opacitySlider: document.getElementById("opacity-slider"),
+            opacityValue: document.getElementById("opacity-val"),
+
+            balanceCount: document.getElementById("balance-count"),
+            redeemInput: document.getElementById("redeem-key-input"),
+            redeemBtn: document.getElementById("redeem-key-btn"),
+            redeemMsg: document.getElementById("redeem-key-msg"),
+
+            downloadBtn: document.getElementById("download-btn"),
+            previewModal: document.getElementById("preview-modal"),
+            finalResultImg: document.getElementById("final-result-img"),
+            realDownloadLink: document.getElementById("real-download-link"),
+            canvas: document.getElementById("processing-canvas")
+        };
+
+        function showRedeemMessage(msg, type = "info") {
+            const cls = type === "error" ? "text-rose-500" : (type === "success" ? "text-emerald-600" : "text-slate-500");
+            els.redeemMsg.className = `text-xs min-h-[18px] ${cls}`;
+            els.redeemMsg.innerText = msg;
+        }
+
+        function loadBalanceState() {
+            const b = parseInt(localStorage.getItem(STORAGE_KEYS.balance) || "0", 10);
+            state.balance = Number.isFinite(b) ? Math.max(0, b) : 0;
+            try {
+                state.usedKeys = JSON.parse(localStorage.getItem(STORAGE_KEYS.used) || "{}") || {};
+            } catch (_) {
+                state.usedKeys = {};
+            }
+            updateBalanceUI();
+        }
+
+        function saveBalanceState() {
+            localStorage.setItem(STORAGE_KEYS.balance, String(state.balance));
+            localStorage.setItem(STORAGE_KEYS.used, JSON.stringify(state.usedKeys));
+        }
+
+        function updateBalanceUI() {
+            els.balanceCount.innerText = `${state.balance} 点`;
+        }
+
+        function redeemKey() {
+            const key = (els.redeemInput.value || "").trim().toUpperCase();
+            if (!key) {
+                showRedeemMessage("请输入密钥。", "error");
+                return;
+            }
+            if (!PRESET_KEYS.includes(key)) {
+                showRedeemMessage("密钥无效。", "error");
+                return;
+            }
+            if (state.usedKeys[key]) {
+                showRedeemMessage("该密钥已被使用。", "error");
+                return;
+            }
+            state.usedKeys[key] = true;
+            state.balance += 10;
+            saveBalanceState();
+            updateBalanceUI();
+            updateDownloadBtnState();
+            els.redeemInput.value = "";
+            showRedeemMessage("兑换成功，余额 +10。", "success");
+        }
+
+        function consumePoint() {
+            if (state.balance <= 0) return false;
+            state.balance -= 1;
+            saveBalanceState();
+            updateBalanceUI();
+            return true;
+        }
+
+        function resetSource() {
+            state.sourceImgData = null;
+            state.processedSealData = null;
+            els.editSource.classList.add("hidden");
+            els.uploadSource.classList.remove("hidden");
+            els.successBar.classList.add("hidden");
+            els.sealLayer.classList.add("hidden");
+            updateDownloadBtnState();
+        }
+
+        function resetTarget() {
+            state.targetImgData = null;
+            els.editTarget.classList.add("hidden");
+            els.uploadTarget.classList.remove("hidden");
+            updateDownloadBtnState();
+        }
+
+        function updateSealStyle() {
+            els.sealLayer.style.width = `${state.scale}%`;
+            els.sealLayer.style.opacity = state.opacity;
+        }
+
+        function updateSealPosition() {
+            els.sealLayer.style.left = `${state.sealPos.x}%`;
+            els.sealLayer.style.top = `${state.sealPos.y}%`;
+        }
+
+        function processSeal() {
+            if (!state.sourceImgData) return;
+            const img = new Image();
+            img.src = state.sourceImgData;
+            img.onload = () => {
+                const canvas = els.canvas;
+                const ctx = canvas.getContext("2d");
+                const maxWidth = 1000;
+                const ratio = Math.min(1, maxWidth / img.width);
+                canvas.width = img.width * ratio;
+                canvas.height = img.height * ratio;
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const d = imageData.data;
+                for (let i = 0; i < d.length; i += 4) {
+                    const r = d[i];
+                    const g = d[i + 1];
+                    const b = d[i + 2];
+                    const isRed = (r - g > state.threshold) && (r - b > state.threshold);
+                    if (!isRed) d[i + 3] = 0;
+                }
+                ctx.putImageData(imageData, 0, 0);
+                state.processedSealData = canvas.toDataURL("image/png");
+                els.processedPreview.src = state.processedSealData;
+                els.sealDisplay.src = state.processedSealData;
+                els.successBar.classList.remove("hidden");
+                updateDownloadBtnState();
+            };
+        }
+
+        function updateDownloadBtnState() {
+            const ready = Boolean(state.processedSealData && state.targetImgData);
+            const canUse = state.balance > 0;
+            const enabled = ready && canUse;
+            els.downloadBtn.disabled = !enabled;
+
+            if (enabled) {
+                els.downloadBtn.className = "flex-1 px-4 py-2 rounded-lg bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white text-sm font-bold";
+                els.downloadBtn.innerText = "生成并预览 PDF（消耗1点）";
+                els.sealLayer.classList.remove("hidden");
+                return;
+            }
+
+            els.downloadBtn.className = "flex-1 px-4 py-2 rounded-lg bg-slate-200 text-slate-500 text-sm font-bold cursor-not-allowed";
+            if (!state.processedSealData) {
+                els.downloadBtn.innerText = "等待印章提取...";
+            } else if (!state.targetImgData) {
+                els.downloadBtn.innerText = "等待背景上传...";
+            } else {
+                els.downloadBtn.innerText = "余额不足，请先兑换密钥";
+            }
+        }
+
+        function generateAndPreviewPdf() {
+            if (els.downloadBtn.disabled) return;
+            if (state.balance <= 0) {
+                showRedeemMessage("余额不足，请先兑换密钥。", "error");
+                updateDownloadBtnState();
+                return;
+            }
+
+            const bgImg = new Image();
+            bgImg.src = state.targetImgData;
+            bgImg.onload = () => {
+                const cv = document.createElement("canvas");
+                cv.width = bgImg.width;
+                cv.height = bgImg.height;
+                const ctx = cv.getContext("2d");
+                ctx.drawImage(bgImg, 0, 0);
+
+                const sealImg = new Image();
+                sealImg.src = state.processedSealData;
+                sealImg.onload = () => {
+                    const w = cv.width;
+                    const h = cv.height;
+                    const sealW = w * (state.scale / 100);
+                    const sealH = sealW * (sealImg.height / sealImg.width);
+                    const x = (w * state.sealPos.x / 100) - (sealW / 2);
+                    const y = (h * state.sealPos.y / 100) - (sealH / 2);
+                    ctx.globalAlpha = state.opacity;
+                    ctx.drawImage(sealImg, x, y, sealW, sealH);
+                    const pngData = cv.toDataURL("image/png");
+
+                    if (!consumePoint()) {
+                        showRedeemMessage("余额不足，请先兑换密钥。", "error");
+                        updateDownloadBtnState();
+                        return;
+                    }
+
+                    const { jsPDF } = window.jspdf;
+                    const pdf = new jsPDF({
+                        orientation: w >= h ? "landscape" : "portrait",
+                        unit: "px",
+                        format: [w, h]
+                    });
+                    pdf.addImage(pngData, "PNG", 0, 0, w, h);
+
+                    const blob = pdf.output("blob");
+                    if (state.lastPdfUrl) URL.revokeObjectURL(state.lastPdfUrl);
+                    state.lastPdfUrl = URL.createObjectURL(blob);
+
+                    els.finalResultImg.src = pngData;
+                    els.realDownloadLink.href = state.lastPdfUrl;
+                    els.realDownloadLink.download = "seal-result.pdf";
+                    els.previewModal.classList.remove("hidden");
+                    updateDownloadBtnState();
+                };
+            };
+        }
+
+        function closeModal() {
+            els.previewModal.classList.add("hidden");
+        }
+
+        let isDragging = false;
+        let startX = 0;
+        let startY = 0;
+
+        function dragStart(clientX, clientY) {
+            isDragging = true;
+            startX = clientX;
+            startY = clientY;
+        }
+
+        function dragMove(clientX, clientY) {
+            if (!isDragging) return;
+            const rect = els.canvasContainer.getBoundingClientRect();
+            const dx = ((clientX - startX) / rect.width) * 100;
+            const dy = ((clientY - startY) / rect.height) * 100;
+            state.sealPos.x = Math.max(0, Math.min(100, state.sealPos.x + dx));
+            state.sealPos.y = Math.max(0, Math.min(100, state.sealPos.y + dy));
+            updateSealPosition();
+            startX = clientX;
+            startY = clientY;
+        }
+
+        function dragEnd() {
+            isDragging = false;
+        }
+
+        els.sourceInput.addEventListener("change", (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                state.sourceImgData = ev.target.result;
+                els.sourcePreview.src = state.sourceImgData;
+                els.uploadSource.classList.add("hidden");
+                els.editSource.classList.remove("hidden");
+                processSeal();
+            };
+            reader.readAsDataURL(file);
+        });
+
+        els.targetInput.addEventListener("change", (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                state.targetImgData = ev.target.result;
+                els.targetDisplay.src = state.targetImgData;
+                els.uploadTarget.classList.add("hidden");
+                els.editTarget.classList.remove("hidden");
+                state.sealPos = { x: 50, y: 50 };
+                updateSealPosition();
+                updateDownloadBtnState();
+            };
+            reader.readAsDataURL(file);
+        });
+
+        els.thresholdSlider.addEventListener("input", (e) => {
+            state.threshold = parseInt(e.target.value, 10);
+            els.thresholdValue.innerText = String(state.threshold);
+            processSeal();
+        });
+
+        els.scaleSlider.addEventListener("input", (e) => {
+            state.scale = parseInt(e.target.value, 10);
+            els.scaleValue.innerText = `${state.scale}%`;
+            updateSealStyle();
+        });
+
+        els.opacitySlider.addEventListener("input", (e) => {
+            state.opacity = parseInt(e.target.value, 10) / 100;
+            els.opacityValue.innerText = `${Math.round(state.opacity * 100)}%`;
+            updateSealStyle();
+        });
+
+        els.redeemBtn.addEventListener("click", redeemKey);
+        els.redeemInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") redeemKey();
+        });
+        els.downloadBtn.addEventListener("click", generateAndPreviewPdf);
+
+        els.sealLayer.addEventListener("mousedown", (e) => {
+            e.preventDefault();
+            dragStart(e.clientX, e.clientY);
+        });
+        els.sealLayer.addEventListener("touchstart", (e) => {
+            dragStart(e.touches[0].clientX, e.touches[0].clientY);
+        }, { passive: true });
+
+        window.addEventListener("mousemove", (e) => dragMove(e.clientX, e.clientY));
+        window.addEventListener("mouseup", dragEnd);
+        window.addEventListener("touchmove", (e) => dragMove(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
+        window.addEventListener("touchend", dragEnd);
+
+        loadBalanceState();
+        updateSealStyle();
+        updateSealPosition();
+        updateDownloadBtnState();
+    </script>
+    <script>
+        if ("serviceWorker" in navigator) {
+            window.addEventListener("load", () => {
+                navigator.serviceWorker.register("./sw.js").catch(() => {});
+            });
+        }
+    </script>
+</body>
+</html>

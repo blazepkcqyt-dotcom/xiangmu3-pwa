@@ -23,6 +23,7 @@
             background-size: 16px 16px;
             background-position: 0 0, 0 8px, 8px -8px, -8px 0;
         }
+
         .slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
@@ -32,18 +33,22 @@
             background: currentColor;
             border: 2px solid #fff;
         }
+
+        .seal-item.active .seal-outline {
+            opacity: 1;
+        }
     </style>
 </head>
-<body class="min-h-screen bg-gradient-to-br from-rose-50 via-white to-indigo-50 text-slate-800">
+<body class="min-h-screen bg-gradient-to-br from-rose-50 via-white to-sky-50 text-slate-800">
     <main class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
         <header class="rounded-3xl bg-white/90 border border-white shadow-lg p-6">
-            <h1 class="text-2xl sm:text-3xl font-black bg-gradient-to-r from-rose-600 to-violet-600 bg-clip-text text-transparent">大菲菲专属AI图像移植工具</h1>
-            <p class="text-sm text-slate-500 mt-2">本地处理 | 阈值抠印章 | 拖拽合成 | 导出 PDF</p>
+            <h1 class="text-2xl sm:text-3xl font-black bg-gradient-to-r from-rose-600 to-sky-600 bg-clip-text text-transparent">大菲菲专属AI图像移植工具</h1>
+            <p class="text-sm text-slate-500 mt-2">本地处理 | 阈值抠印章 | 多印章叠加 | PDF 导出</p>
         </header>
 
         <section class="grid lg:grid-cols-2 gap-6">
             <div class="rounded-3xl bg-white/90 border border-white shadow-lg p-5 space-y-4">
-                <h2 class="text-lg font-bold">步骤1：提取印章</h2>
+                <h2 class="text-lg font-bold">步骤 1：提取印章</h2>
                 <label id="upload-source-area" class="block border-2 border-dashed border-slate-300 rounded-2xl p-8 text-center cursor-pointer hover:border-rose-400 hover:bg-rose-50/40 transition">
                     <p class="font-semibold">上传原始印章图片</p>
                     <p class="text-xs text-slate-500 mt-1">支持 JPG / PNG</p>
@@ -62,7 +67,7 @@
                     <div>
                         <div class="flex items-center justify-between text-sm mb-1">
                             <span class="font-semibold">红色敏感度</span>
-                            <span id="threshold-value" class="text-violet-600 font-bold">40</span>
+                            <span id="threshold-value" class="text-sky-600 font-bold">40</span>
                         </div>
                         <input id="threshold-slider" type="range" min="1" max="100" value="40" class="slider w-full h-2 rounded-lg bg-slate-200 text-rose-500 appearance-none">
                     </div>
@@ -74,8 +79,8 @@
             </div>
 
             <div class="rounded-3xl bg-white/90 border border-white shadow-lg p-5 space-y-4">
-                <h2 class="text-lg font-bold">步骤2：移植合成</h2>
-                <label id="upload-target-area" class="block border-2 border-dashed border-slate-300 rounded-2xl p-8 text-center cursor-pointer hover:border-violet-400 hover:bg-violet-50/40 transition">
+                <h2 class="text-lg font-bold">步骤 2：移植合成</h2>
+                <label id="upload-target-area" class="block border-2 border-dashed border-slate-300 rounded-2xl p-8 text-center cursor-pointer hover:border-sky-400 hover:bg-sky-50/40 transition">
                     <p class="font-semibold">上传背景图片</p>
                     <input id="target-input" type="file" class="hidden" accept="image/*">
                 </label>
@@ -84,37 +89,53 @@
                     <div class="rounded-xl border border-slate-200 bg-slate-50 p-2 flex justify-center min-h-[260px]">
                         <div id="canvas-container" class="relative inline-block max-w-full max-h-[420px] overflow-hidden">
                             <img id="target-img-display" class="block max-w-full max-h-[420px] object-contain pointer-events-none" alt="target">
-                            <div id="seal-layer" class="absolute -translate-x-1/2 -translate-y-1/2 cursor-move hidden" style="left:50%;top:50%;touch-action:none;">
-                                <img id="seal-img-display" class="w-full h-auto pointer-events-none mix-blend-multiply drop-shadow" alt="seal">
-                            </div>
+                            <div id="seal-stage" class="absolute inset-0"></div>
                         </div>
                     </div>
 
-                    <div class="grid sm:grid-cols-2 gap-4">
+                    <div class="grid sm:grid-cols-3 gap-4">
                         <div>
                             <div class="flex items-center justify-between text-sm mb-1">
                                 <span class="font-semibold">印章大小</span>
-                                <span id="scale-val" class="text-violet-600 font-bold">20%</span>
+                                <span id="scale-val" class="text-sky-600 font-bold">20%</span>
                             </div>
-                            <input id="scale-slider" type="range" min="1" max="120" value="20" class="slider w-full h-2 rounded-lg bg-slate-200 text-violet-500 appearance-none">
+                            <input id="scale-slider" type="range" min="1" max="120" value="20" class="slider w-full h-2 rounded-lg bg-slate-200 text-sky-500 appearance-none">
                         </div>
                         <div>
                             <div class="flex items-center justify-between text-sm mb-1">
                                 <span class="font-semibold">透明度</span>
-                                <span id="opacity-val" class="text-violet-600 font-bold">90%</span>
+                                <span id="opacity-val" class="text-sky-600 font-bold">90%</span>
                             </div>
-                            <input id="opacity-slider" type="range" min="30" max="100" value="90" class="slider w-full h-2 rounded-lg bg-slate-200 text-violet-500 appearance-none">
+                            <input id="opacity-slider" type="range" min="30" max="100" value="90" class="slider w-full h-2 rounded-lg bg-slate-200 text-sky-500 appearance-none">
+                        </div>
+                        <div>
+                            <div class="flex items-center justify-between text-sm mb-1">
+                                <span class="font-semibold">旋转角度</span>
+                                <span id="rotation-val" class="text-sky-600 font-bold">0 deg</span>
+                            </div>
+                            <input id="rotation-slider" type="range" min="-180" max="180" value="0" class="slider w-full h-2 rounded-lg bg-slate-200 text-sky-500 appearance-none">
                         </div>
                     </div>
 
-                    <div class="rounded-xl border border-violet-100 bg-violet-50/60 p-4 space-y-2">
+                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="font-semibold text-sm">当前选中</span>
+                            <span id="active-seal-label" class="text-sm font-bold text-sky-600">暂无</span>
+                        </div>
+                        <div class="flex gap-2 flex-wrap">
+                            <button id="duplicate-seal-btn" type="button" class="px-4 py-2 rounded-lg bg-sky-600 text-white text-sm font-bold hover:bg-sky-500 disabled:bg-slate-200 disabled:text-slate-500" disabled>复制印章</button>
+                            <button id="delete-seal-btn" type="button" class="px-4 py-2 rounded-lg bg-rose-600 text-white text-sm font-bold hover:bg-rose-500 disabled:bg-slate-200 disabled:text-slate-500" disabled>删除当前印章</button>
+                        </div>
+                    </div>
+
+                    <div class="rounded-xl border border-sky-100 bg-sky-50/60 p-4 space-y-2">
                         <div class="flex items-center justify-between">
                             <span class="font-semibold text-sm">余额</span>
-                            <span id="balance-count" class="font-black text-violet-700">0 点</span>
+                            <span id="balance-count" class="font-black text-sky-700">0 点</span>
                         </div>
                         <div class="flex gap-2">
-                            <input id="redeem-key-input" type="text" placeholder="输入密钥（例如 DF-XXXX-XXXX-XXXX）" class="flex-1 px-3 py-2 rounded-lg border border-slate-300 text-sm outline-none focus:ring-2 focus:ring-violet-200">
-                            <button id="redeem-key-btn" type="button" class="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm font-bold hover:bg-violet-500">兑换</button>
+                            <input id="redeem-key-input" type="text" placeholder="输入密钥（例如 DF-XXXX-XXXX-XXXX）" class="flex-1 px-3 py-2 rounded-lg border border-slate-300 text-sm outline-none focus:ring-2 focus:ring-sky-200">
+                            <button id="redeem-key-btn" type="button" class="px-4 py-2 rounded-lg bg-sky-600 text-white text-sm font-bold hover:bg-sky-500">兑换</button>
                         </div>
                         <p id="redeem-key-msg" class="text-xs min-h-[18px] text-slate-500"></p>
                     </div>
@@ -137,14 +158,13 @@
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <button onclick="closeModal()" class="py-3 rounded-xl bg-slate-100 hover:bg-slate-200 font-semibold">关闭</button>
-                    <a id="real-download-link" href="#" download="seal-result.pdf" class="py-3 rounded-xl bg-gradient-to-r from-rose-500 to-fuchsia-500 text-white font-bold text-center">下载 PDF</a>
+                    <a id="real-download-link" href="#" download="seal-result.pdf" class="py-3 rounded-xl bg-gradient-to-r from-rose-500 to-sky-500 text-white font-bold text-center">下载 PDF</a>
                 </div>
             </div>
         </div>
     </div>
 
     <canvas id="processing-canvas" class="hidden"></canvas>
-
     <script>
         const STORAGE_KEYS = {
             balance: "seal_tool_balance",
@@ -179,9 +199,9 @@
             processedSealData: null,
             targetImgData: null,
             threshold: 40,
-            sealPos: { x: 50, y: 50 },
-            scale: 20,
-            opacity: 0.9,
+            seals: [],
+            activeSealId: null,
+            sealCounter: 0,
             balance: 0,
             usedKeys: {},
             lastPdfUrl: null
@@ -196,31 +216,50 @@
             thresholdSlider: document.getElementById("threshold-slider"),
             thresholdValue: document.getElementById("threshold-value"),
             successBar: document.getElementById("extract-success-bar"),
-
             uploadTarget: document.getElementById("upload-target-area"),
             editTarget: document.getElementById("edit-target-area"),
             targetInput: document.getElementById("target-input"),
             targetDisplay: document.getElementById("target-img-display"),
-            sealDisplay: document.getElementById("seal-img-display"),
-            sealLayer: document.getElementById("seal-layer"),
             canvasContainer: document.getElementById("canvas-container"),
-
+            sealStage: document.getElementById("seal-stage"),
             scaleSlider: document.getElementById("scale-slider"),
             scaleValue: document.getElementById("scale-val"),
             opacitySlider: document.getElementById("opacity-slider"),
             opacityValue: document.getElementById("opacity-val"),
-
+            rotationSlider: document.getElementById("rotation-slider"),
+            rotationValue: document.getElementById("rotation-val"),
+            activeSealLabel: document.getElementById("active-seal-label"),
+            duplicateSealBtn: document.getElementById("duplicate-seal-btn"),
+            deleteSealBtn: document.getElementById("delete-seal-btn"),
             balanceCount: document.getElementById("balance-count"),
             redeemInput: document.getElementById("redeem-key-input"),
             redeemBtn: document.getElementById("redeem-key-btn"),
             redeemMsg: document.getElementById("redeem-key-msg"),
-
             downloadBtn: document.getElementById("download-btn"),
             previewModal: document.getElementById("preview-modal"),
             finalResultImg: document.getElementById("final-result-img"),
             realDownloadLink: document.getElementById("real-download-link"),
             canvas: document.getElementById("processing-canvas")
         };
+
+        function createSeal(overrides = {}) {
+            state.sealCounter += 1;
+            return {
+                id: `seal-${state.sealCounter}`,
+                label: `印章 ${state.sealCounter}`,
+                x: 50,
+                y: 50,
+                scale: 20,
+                opacity: 0.9,
+                rotation: 0,
+                src: state.processedSealData,
+                ...overrides
+            };
+        }
+
+        function getActiveSeal() {
+            return state.seals.find((seal) => seal.id === state.activeSealId) || null;
+        }
 
         function showRedeemMessage(msg, type = "info") {
             const cls = type === "error" ? "text-rose-500" : (type === "success" ? "text-emerald-600" : "text-slate-500");
@@ -229,8 +268,8 @@
         }
 
         function loadBalanceState() {
-            const b = parseInt(localStorage.getItem(STORAGE_KEYS.balance) || "0", 10);
-            state.balance = Number.isFinite(b) ? Math.max(0, b) : 0;
+            const savedBalance = parseInt(localStorage.getItem(STORAGE_KEYS.balance) || "0", 10);
+            state.balance = Number.isFinite(savedBalance) ? Math.max(0, savedBalance) : 0;
             try {
                 state.usedKeys = JSON.parse(localStorage.getItem(STORAGE_KEYS.used) || "{}") || {};
             } catch (_) {
@@ -279,31 +318,127 @@
             return true;
         }
 
+        function syncControlsFromActiveSeal() {
+            const seal = getActiveSeal();
+            const hasActiveSeal = Boolean(seal);
+            els.scaleSlider.disabled = !hasActiveSeal;
+            els.opacitySlider.disabled = !hasActiveSeal;
+            els.rotationSlider.disabled = !hasActiveSeal;
+            els.deleteSealBtn.disabled = !hasActiveSeal;
+            els.duplicateSealBtn.disabled = !state.processedSealData;
+            if (!seal) {
+                els.scaleValue.innerText = "--";
+                els.opacityValue.innerText = "--";
+                els.rotationValue.innerText = "--";
+                els.activeSealLabel.innerText = "暂无";
+                return;
+            }
+            els.scaleSlider.value = String(seal.scale);
+            els.opacitySlider.value = String(Math.round(seal.opacity * 100));
+            els.rotationSlider.value = String(seal.rotation);
+            els.scaleValue.innerText = `${seal.scale}%`;
+            els.opacityValue.innerText = `${Math.round(seal.opacity * 100)}%`;
+            els.rotationValue.innerText = `${seal.rotation} deg`;
+            els.activeSealLabel.innerText = seal.label;
+        }
+
+        function renderSeals() {
+            els.sealStage.innerHTML = "";
+            state.seals.forEach((seal) => {
+                const item = document.createElement("div");
+                item.className = `seal-item absolute cursor-move ${seal.id === state.activeSealId ? "active" : ""}`;
+                item.style.left = `${seal.x}%`;
+                item.style.top = `${seal.y}%`;
+                item.style.width = `${seal.scale}%`;
+                item.style.opacity = String(seal.opacity);
+                item.style.transform = `translate(-50%, -50%) rotate(${seal.rotation}deg)`;
+                item.style.touchAction = "none";
+                item.innerHTML = `
+                    <div class="relative">
+                        <img class="w-full h-auto pointer-events-none mix-blend-multiply drop-shadow" src="${seal.src}" alt="seal">
+                        <div class="seal-outline absolute inset-0 rounded border-2 border-dashed border-sky-500 bg-sky-400/10 opacity-0 pointer-events-none"></div>
+                    </div>
+                `;
+                item.addEventListener("mousedown", (e) => {
+                    e.preventDefault();
+                    setActiveSeal(seal.id);
+                    dragStart(seal.id, e.clientX, e.clientY);
+                });
+                item.addEventListener("touchstart", (e) => {
+                    setActiveSeal(seal.id);
+                    dragStart(seal.id, e.touches[0].clientX, e.touches[0].clientY);
+                }, { passive: true });
+                item.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    setActiveSeal(seal.id);
+                });
+                els.sealStage.appendChild(item);
+            });
+            syncControlsFromActiveSeal();
+        }
+
+        function setActiveSeal(sealId) {
+            state.activeSealId = sealId;
+            renderSeals();
+            updateDownloadBtnState();
+        }
+
+        function resetGeneratedSeals() {
+            state.seals = [];
+            state.activeSealId = null;
+            renderSeals();
+        }
+
+        function addSeal(overrides = {}) {
+            if (!state.processedSealData) return;
+            const seal = createSeal(overrides);
+            state.seals.push(seal);
+            state.activeSealId = seal.id;
+            renderSeals();
+            updateDownloadBtnState();
+        }
+
+        function duplicateActiveSeal() {
+            const baseSeal = getActiveSeal() || state.seals[0];
+            if (!baseSeal) {
+                addSeal();
+                return;
+            }
+            addSeal({
+                x: Math.min(90, baseSeal.x + 8),
+                y: Math.min(90, baseSeal.y + 8),
+                scale: baseSeal.scale,
+                opacity: baseSeal.opacity,
+                rotation: baseSeal.rotation
+            });
+        }
+
+        function deleteActiveSeal() {
+            const activeSeal = getActiveSeal();
+            if (!activeSeal) return;
+            state.seals = state.seals.filter((seal) => seal.id !== activeSeal.id);
+            state.activeSealId = state.seals.length ? state.seals[state.seals.length - 1].id : null;
+            renderSeals();
+            updateDownloadBtnState();
+        }
+
         function resetSource() {
             state.sourceImgData = null;
             state.processedSealData = null;
+            els.sourceInput.value = "";
             els.editSource.classList.add("hidden");
             els.uploadSource.classList.remove("hidden");
             els.successBar.classList.add("hidden");
-            els.sealLayer.classList.add("hidden");
+            resetGeneratedSeals();
             updateDownloadBtnState();
         }
 
         function resetTarget() {
             state.targetImgData = null;
+            els.targetInput.value = "";
             els.editTarget.classList.add("hidden");
             els.uploadTarget.classList.remove("hidden");
             updateDownloadBtnState();
-        }
-
-        function updateSealStyle() {
-            els.sealLayer.style.width = `${state.scale}%`;
-            els.sealLayer.style.opacity = state.opacity;
-        }
-
-        function updateSealPosition() {
-            els.sealLayer.style.left = `${state.sealPos.x}%`;
-            els.sealLayer.style.top = `${state.sealPos.y}%`;
         }
 
         function processSeal() {
@@ -318,46 +453,70 @@
                 canvas.width = img.width * ratio;
                 canvas.height = img.height * ratio;
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
                 const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                const d = imageData.data;
-                for (let i = 0; i < d.length; i += 4) {
-                    const r = d[i];
-                    const g = d[i + 1];
-                    const b = d[i + 2];
+                const data = imageData.data;
+                for (let i = 0; i < data.length; i += 4) {
+                    const r = data[i];
+                    const g = data[i + 1];
+                    const b = data[i + 2];
                     const isRed = (r - g > state.threshold) && (r - b > state.threshold);
-                    if (!isRed) d[i + 3] = 0;
+                    if (!isRed) data[i + 3] = 0;
                 }
                 ctx.putImageData(imageData, 0, 0);
                 state.processedSealData = canvas.toDataURL("image/png");
                 els.processedPreview.src = state.processedSealData;
-                els.sealDisplay.src = state.processedSealData;
                 els.successBar.classList.remove("hidden");
-                updateDownloadBtnState();
+                resetGeneratedSeals();
+                addSeal();
             };
         }
 
         function updateDownloadBtnState() {
-            const ready = Boolean(state.processedSealData && state.targetImgData);
+            const ready = Boolean(state.targetImgData && state.seals.length);
             const canUse = state.balance > 0;
             const enabled = ready && canUse;
             els.downloadBtn.disabled = !enabled;
-
+            els.duplicateSealBtn.disabled = !state.processedSealData;
+            els.deleteSealBtn.disabled = !getActiveSeal();
             if (enabled) {
-                els.downloadBtn.className = "flex-1 px-4 py-2 rounded-lg bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white text-sm font-bold";
+                els.downloadBtn.className = "flex-1 px-4 py-2 rounded-lg bg-gradient-to-r from-sky-600 to-rose-500 text-white text-sm font-bold";
                 els.downloadBtn.innerText = "生成并预览 PDF（消耗1点）";
-                els.sealLayer.classList.remove("hidden");
                 return;
             }
-
             els.downloadBtn.className = "flex-1 px-4 py-2 rounded-lg bg-slate-200 text-slate-500 text-sm font-bold cursor-not-allowed";
             if (!state.processedSealData) {
                 els.downloadBtn.innerText = "等待印章提取...";
             } else if (!state.targetImgData) {
                 els.downloadBtn.innerText = "等待背景上传...";
+            } else if (!state.seals.length) {
+                els.downloadBtn.innerText = "请先生成印章...";
             } else {
                 els.downloadBtn.innerText = "余额不足，请先兑换密钥";
             }
+        }
+
+        function finalizePdf(canvas) {
+            const pngData = canvas.toDataURL("image/png");
+            if (!consumePoint()) {
+                showRedeemMessage("余额不足，请先兑换密钥。", "error");
+                updateDownloadBtnState();
+                return;
+            }
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({
+                orientation: canvas.width >= canvas.height ? "landscape" : "portrait",
+                unit: "px",
+                format: [canvas.width, canvas.height]
+            });
+            pdf.addImage(pngData, "PNG", 0, 0, canvas.width, canvas.height);
+            const blob = pdf.output("blob");
+            if (state.lastPdfUrl) URL.revokeObjectURL(state.lastPdfUrl);
+            state.lastPdfUrl = URL.createObjectURL(blob);
+            els.finalResultImg.src = pngData;
+            els.realDownloadLink.href = state.lastPdfUrl;
+            els.realDownloadLink.download = "seal-result.pdf";
+            els.previewModal.classList.remove("hidden");
+            updateDownloadBtnState();
         }
 
         function generateAndPreviewPdf() {
@@ -367,53 +526,34 @@
                 updateDownloadBtnState();
                 return;
             }
-
             const bgImg = new Image();
             bgImg.src = state.targetImgData;
             bgImg.onload = () => {
-                const cv = document.createElement("canvas");
-                cv.width = bgImg.width;
-                cv.height = bgImg.height;
-                const ctx = cv.getContext("2d");
+                const canvas = document.createElement("canvas");
+                canvas.width = bgImg.width;
+                canvas.height = bgImg.height;
+                const ctx = canvas.getContext("2d");
                 ctx.drawImage(bgImg, 0, 0);
-
-                const sealImg = new Image();
-                sealImg.src = state.processedSealData;
-                sealImg.onload = () => {
-                    const w = cv.width;
-                    const h = cv.height;
-                    const sealW = w * (state.scale / 100);
-                    const sealH = sealW * (sealImg.height / sealImg.width);
-                    const x = (w * state.sealPos.x / 100) - (sealW / 2);
-                    const y = (h * state.sealPos.y / 100) - (sealH / 2);
-                    ctx.globalAlpha = state.opacity;
-                    ctx.drawImage(sealImg, x, y, sealW, sealH);
-                    const pngData = cv.toDataURL("image/png");
-
-                    if (!consumePoint()) {
-                        showRedeemMessage("余额不足，请先兑换密钥。", "error");
-                        updateDownloadBtnState();
-                        return;
-                    }
-
-                    const { jsPDF } = window.jspdf;
-                    const pdf = new jsPDF({
-                        orientation: w >= h ? "landscape" : "portrait",
-                        unit: "px",
-                        format: [w, h]
-                    });
-                    pdf.addImage(pngData, "PNG", 0, 0, w, h);
-
-                    const blob = pdf.output("blob");
-                    if (state.lastPdfUrl) URL.revokeObjectURL(state.lastPdfUrl);
-                    state.lastPdfUrl = URL.createObjectURL(blob);
-
-                    els.finalResultImg.src = pngData;
-                    els.realDownloadLink.href = state.lastPdfUrl;
-                    els.realDownloadLink.download = "seal-result.pdf";
-                    els.previewModal.classList.remove("hidden");
-                    updateDownloadBtnState();
-                };
+                let remaining = state.seals.length;
+                if (!remaining) return;
+                state.seals.forEach((seal) => {
+                    const sealImg = new Image();
+                    sealImg.src = seal.src;
+                    sealImg.onload = () => {
+                        const renderWidth = canvas.width * (seal.scale / 100);
+                        const renderHeight = renderWidth * (sealImg.height / sealImg.width);
+                        const centerX = canvas.width * (seal.x / 100);
+                        const centerY = canvas.height * (seal.y / 100);
+                        ctx.save();
+                        ctx.translate(centerX, centerY);
+                        ctx.rotate((seal.rotation * Math.PI) / 180);
+                        ctx.globalAlpha = seal.opacity;
+                        ctx.drawImage(sealImg, -renderWidth / 2, -renderHeight / 2, renderWidth, renderHeight);
+                        ctx.restore();
+                        remaining -= 1;
+                        if (remaining === 0) finalizePdf(canvas);
+                    };
+                });
             };
         }
 
@@ -421,38 +561,52 @@
             els.previewModal.classList.add("hidden");
         }
 
-        let isDragging = false;
-        let startX = 0;
-        let startY = 0;
+        let dragState = {
+            isDragging: false,
+            sealId: null,
+            startX: 0,
+            startY: 0
+        };
 
-        function dragStart(clientX, clientY) {
-            isDragging = true;
-            startX = clientX;
-            startY = clientY;
+        function dragStart(sealId, clientX, clientY) {
+            dragState.isDragging = true;
+            dragState.sealId = sealId;
+            dragState.startX = clientX;
+            dragState.startY = clientY;
         }
 
         function dragMove(clientX, clientY) {
-            if (!isDragging) return;
+            if (!dragState.isDragging) return;
+            const seal = state.seals.find((item) => item.id === dragState.sealId);
+            if (!seal) return;
             const rect = els.canvasContainer.getBoundingClientRect();
-            const dx = ((clientX - startX) / rect.width) * 100;
-            const dy = ((clientY - startY) / rect.height) * 100;
-            state.sealPos.x = Math.max(0, Math.min(100, state.sealPos.x + dx));
-            state.sealPos.y = Math.max(0, Math.min(100, state.sealPos.y + dy));
-            updateSealPosition();
-            startX = clientX;
-            startY = clientY;
+            const dx = ((clientX - dragState.startX) / rect.width) * 100;
+            const dy = ((clientY - dragState.startY) / rect.height) * 100;
+            seal.x = Math.max(0, Math.min(100, seal.x + dx));
+            seal.y = Math.max(0, Math.min(100, seal.y + dy));
+            dragState.startX = clientX;
+            dragState.startY = clientY;
+            renderSeals();
         }
 
         function dragEnd() {
-            isDragging = false;
+            dragState.isDragging = false;
+            dragState.sealId = null;
+        }
+
+        function updateActiveSeal(patch) {
+            const seal = getActiveSeal();
+            if (!seal) return;
+            Object.assign(seal, patch);
+            renderSeals();
         }
 
         els.sourceInput.addEventListener("change", (e) => {
             const file = e.target.files[0];
             if (!file) return;
             const reader = new FileReader();
-            reader.onload = (ev) => {
-                state.sourceImgData = ev.target.result;
+            reader.onload = (event) => {
+                state.sourceImgData = event.target.result;
                 els.sourcePreview.src = state.sourceImgData;
                 els.uploadSource.classList.add("hidden");
                 els.editSource.classList.remove("hidden");
@@ -465,16 +619,19 @@
             const file = e.target.files[0];
             if (!file) return;
             const reader = new FileReader();
-            reader.onload = (ev) => {
-                state.targetImgData = ev.target.result;
+            reader.onload = (event) => {
+                state.targetImgData = event.target.result;
                 els.targetDisplay.src = state.targetImgData;
                 els.uploadTarget.classList.add("hidden");
                 els.editTarget.classList.remove("hidden");
-                state.sealPos = { x: 50, y: 50 };
-                updateSealPosition();
                 updateDownloadBtnState();
             };
             reader.readAsDataURL(file);
+        });
+
+        els.canvasContainer.addEventListener("click", () => {
+            if (!state.seals.length) return;
+            if (!state.activeSealId) setActiveSeal(state.seals[state.seals.length - 1].id);
         });
 
         els.thresholdSlider.addEventListener("input", (e) => {
@@ -484,30 +641,30 @@
         });
 
         els.scaleSlider.addEventListener("input", (e) => {
-            state.scale = parseInt(e.target.value, 10);
-            els.scaleValue.innerText = `${state.scale}%`;
-            updateSealStyle();
+            const scale = parseInt(e.target.value, 10);
+            els.scaleValue.innerText = `${scale}%`;
+            updateActiveSeal({ scale });
         });
 
         els.opacitySlider.addEventListener("input", (e) => {
-            state.opacity = parseInt(e.target.value, 10) / 100;
-            els.opacityValue.innerText = `${Math.round(state.opacity * 100)}%`;
-            updateSealStyle();
+            const opacity = parseInt(e.target.value, 10) / 100;
+            els.opacityValue.innerText = `${Math.round(opacity * 100)}%`;
+            updateActiveSeal({ opacity });
         });
 
+        els.rotationSlider.addEventListener("input", (e) => {
+            const rotation = parseInt(e.target.value, 10);
+            els.rotationValue.innerText = `${rotation} deg`;
+            updateActiveSeal({ rotation });
+        });
+
+        els.duplicateSealBtn.addEventListener("click", duplicateActiveSeal);
+        els.deleteSealBtn.addEventListener("click", deleteActiveSeal);
         els.redeemBtn.addEventListener("click", redeemKey);
         els.redeemInput.addEventListener("keydown", (e) => {
             if (e.key === "Enter") redeemKey();
         });
         els.downloadBtn.addEventListener("click", generateAndPreviewPdf);
-
-        els.sealLayer.addEventListener("mousedown", (e) => {
-            e.preventDefault();
-            dragStart(e.clientX, e.clientY);
-        });
-        els.sealLayer.addEventListener("touchstart", (e) => {
-            dragStart(e.touches[0].clientX, e.touches[0].clientY);
-        }, { passive: true });
 
         window.addEventListener("mousemove", (e) => dragMove(e.clientX, e.clientY));
         window.addEventListener("mouseup", dragEnd);
@@ -515,8 +672,7 @@
         window.addEventListener("touchend", dragEnd);
 
         loadBalanceState();
-        updateSealStyle();
-        updateSealPosition();
+        renderSeals();
         updateDownloadBtnState();
     </script>
     <script>

@@ -37,6 +37,22 @@
         .seal-item.active .seal-outline {
             opacity: 1;
         }
+
+        .seal-item {
+            --touch-padding: 18px;
+            padding: var(--touch-padding);
+            margin: calc(var(--touch-padding) * -1);
+            box-sizing: content-box;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        @media (pointer: coarse) {
+            .seal-item {
+                --touch-padding: 28px;
+            }
+        }
     </style>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-rose-50 via-white to-sky-50 text-slate-800">
@@ -359,15 +375,11 @@
                         <div class="seal-outline absolute inset-0 rounded border-2 border-dashed border-sky-500 bg-sky-400/10 opacity-0 pointer-events-none"></div>
                     </div>
                 `;
-                item.addEventListener("mousedown", (e) => {
+                item.addEventListener("pointerdown", (e) => {
                     e.preventDefault();
                     setActiveSeal(seal.id);
-                    dragStart(seal.id, e.clientX, e.clientY);
+                    dragStart(seal.id, e.clientX, e.clientY, e.pointerId);
                 });
-                item.addEventListener("touchstart", (e) => {
-                    setActiveSeal(seal.id);
-                    dragStart(seal.id, e.touches[0].clientX, e.touches[0].clientY);
-                }, { passive: true });
                 item.addEventListener("click", (e) => {
                     e.stopPropagation();
                     setActiveSeal(seal.id);
@@ -565,18 +577,21 @@
             isDragging: false,
             sealId: null,
             startX: 0,
-            startY: 0
+            startY: 0,
+            pointerId: null
         };
 
-        function dragStart(sealId, clientX, clientY) {
+        function dragStart(sealId, clientX, clientY, pointerId = null) {
             dragState.isDragging = true;
             dragState.sealId = sealId;
             dragState.startX = clientX;
             dragState.startY = clientY;
+            dragState.pointerId = pointerId;
         }
 
-        function dragMove(clientX, clientY) {
+        function dragMove(clientX, clientY, pointerId = null) {
             if (!dragState.isDragging) return;
+            if (dragState.pointerId !== null && pointerId !== null && dragState.pointerId !== pointerId) return;
             const seal = state.seals.find((item) => item.id === dragState.sealId);
             if (!seal) return;
             const rect = els.canvasContainer.getBoundingClientRect();
@@ -592,6 +607,7 @@
         function dragEnd() {
             dragState.isDragging = false;
             dragState.sealId = null;
+            dragState.pointerId = null;
         }
 
         function updateActiveSeal(patch) {
@@ -666,10 +682,9 @@
         });
         els.downloadBtn.addEventListener("click", generateAndPreviewPdf);
 
-        window.addEventListener("mousemove", (e) => dragMove(e.clientX, e.clientY));
-        window.addEventListener("mouseup", dragEnd);
-        window.addEventListener("touchmove", (e) => dragMove(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
-        window.addEventListener("touchend", dragEnd);
+        window.addEventListener("pointermove", (e) => dragMove(e.clientX, e.clientY, e.pointerId));
+        window.addEventListener("pointerup", dragEnd);
+        window.addEventListener("pointercancel", dragEnd);
 
         loadBalanceState();
         renderSeals();

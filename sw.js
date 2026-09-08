@@ -1,4 +1,4 @@
-const CACHE_NAME = "seal-tool-v5";
+const CACHE_NAME = "seal-tool-v6";
 const CORE_ASSETS = [
   "./",
   "./index.html",

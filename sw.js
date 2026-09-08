@@ -1,9 +1,11 @@
-const CACHE_NAME = "seal-tool-v2";
+const CACHE_NAME = "seal-tool-v5";
 const CORE_ASSETS = [
   "./",
   "./index.html",
   "./manifest.webmanifest",
-  "./icon.svg",
+  "./apple-touch-icon-180.png",
+  "./app-logo-premium-192.png",
+  "./app-logo-premium-512.png",
   "./大菲菲AI图像移植工具.html"
 ];
 
